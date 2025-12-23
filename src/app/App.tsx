@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ModelCard } from './components/ModelCard';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { AuthModal } from './components/AuthModal';
-import { Dashboard } from './components/Dashboard';
+import { Dashboard } from './components/DashboardAnimated';
 
 export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);

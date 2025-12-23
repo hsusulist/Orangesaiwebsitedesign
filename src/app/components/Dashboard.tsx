@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Zap, Brain, Gamepad2, Sparkles, Send, User, Settings, LogOut, History, Star, Code, MessageSquare, Plus, Menu } from 'lucide-react';
+import { Zap, Brain, Gamepad2, Sparkles, Send, User, Settings, LogOut, History, Star, Code, MessageSquare, Plus, Menu, Volume2, VolumeX, Music } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useSounds } from '../hooks/useSounds';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -28,33 +30,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showModelMenu, setShowModelMenu] = useState(false);
-  const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([
-    {
-      id: '1',
-      name: 'Fast Juices - Quick queries',
-      model: 'fast-juices',
-      lastMessage: 'Game development tips',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      messages: []
-    },
-    {
-      id: '2',
-      name: 'Juices - Script project',
-      model: 'juices',
-      lastMessage: 'Script optimization',
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      messages: []
-    },
-    {
-      id: '3',
-      name: 'Pure Juice - Analysis',
-      model: 'pure-juice',
-      lastMessage: 'AI model comparison',
-      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      messages: []
-    },
-  ]);
+  const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [showDeepThinkMenu, setShowDeepThinkMenu] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   const models = [
     {
@@ -63,7 +42,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       icon: Zap,
       color: 'bg-orange-500',
       description: 'Lightning fast responses',
-      index: 0,
+      toolNum: 1,
     },
     {
       id: 'pure-juice' as AIModel,
@@ -71,7 +50,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       icon: Brain,
       color: 'bg-amber-500',
       description: 'Better thinking',
-      index: 1,
+      toolNum: 2,
     },
     {
       id: 'juices' as AIModel,
@@ -79,7 +58,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       icon: Gamepad2,
       color: 'bg-red-500',
       description: 'Game & script specialist',
-      index: 2,
+      toolNum: 3,
     },
   ];
 
@@ -97,10 +76,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
     
     // Auto-save conversation when first message is sent
     if (messages.length === 0 && !currentConversationId) {
-      const modelData = models.find(m => m.id === selectedModel)!;
       const newConversation: SavedConversation = {
         id: Date.now().toString(),
-        name: `${modelData.name} - ${input.slice(0, 30)}${input.length > 30 ? '...' : ''}`,
+        name: input.slice(0, 50) + (input.length > 50 ? '...' : ''),
         model: selectedModel,
         lastMessage: input.slice(0, 50),
         timestamp: new Date(),
@@ -161,6 +139,22 @@ export function Dashboard({ onLogout }: DashboardProps) {
   };
 
   const selectedModelData = models.find(m => m.id === selectedModel)!;
+  const currentConversation = savedConversations.find(c => c.id === currentConversationId);
+
+  const handleDeepThinkClick = () => {
+    if (selectedModel === 'juices' || selectedModel === 'pure-juice') {
+      // If already in deep think mode, switch back to Fast Juices
+      setSelectedModel('fast-juices');
+      setShowDeepThinkMenu(false);
+    } else {
+      // Show deep think menu to choose
+      setShowDeepThinkMenu(!showDeepThinkMenu);
+    }
+  };
+
+  const handleMuteClick = () => {
+    setIsMuted(!isMuted);
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -249,7 +243,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 <selectedModelData.icon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl">{selectedModelData.name}</h2>
+                <h2 className="text-xl">
+                  {currentConversation ? currentConversation.name : selectedModelData.name}
+                </h2>
                 <p className="text-sm text-gray-500">{selectedModelData.description}</p>
               </div>
             </div>
@@ -361,7 +357,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                   className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Menu className="w-5 h-5 text-gray-600" />
-                  <span className="text-sm text-gray-700">{selectedModelData.index} Tools</span>
+                  <span className="text-sm text-gray-700">Tool {selectedModelData.toolNum}</span>
                 </button>
                 
                 {/* Model dropdown menu */}
@@ -387,7 +383,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                             <p className="text-sm">{model.name}</p>
                             <p className="text-xs text-gray-500">{model.description}</p>
                           </div>
-                          <span className="text-xs text-gray-400">{model.index}</span>
+                          <span className="text-xs text-gray-400">Tool {model.toolNum}</span>
                         </button>
                       ))}
                     </div>
@@ -395,16 +391,58 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 )}
               </div>
               
-              <button 
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  selectedModel === 'juices' 
-                    ? 'bg-blue-100 text-blue-600 border border-blue-300' 
-                    : 'bg-gray-100 text-gray-500 border border-transparent'
-                }`}
-              >
-                <Brain className="w-5 h-5" />
-                <span className="text-sm">Deep Think</span>
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={handleDeepThinkClick}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    selectedModel === 'juices' || selectedModel === 'pure-juice'
+                      ? 'bg-blue-100 text-blue-600 border border-blue-300'
+                      : 'bg-gray-100 text-gray-500 border border-transparent'
+                  }`}
+                >
+                  <Brain className="w-5 h-5" />
+                  <span className="text-sm">Deep Think</span>
+                </button>
+                
+                {/* Deep Think dropdown menu */}
+                {showDeepThinkMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
+                    <div className="p-2">
+                      <p className="text-xs text-gray-500 px-3 py-2">AI Deep Thinking Modules</p>
+                      <button
+                        onClick={() => {
+                          setSelectedModel('pure-juice');
+                          setShowDeepThinkMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="p-2 rounded-lg bg-amber-500">
+                          <Brain className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-sm">Pure Juice</p>
+                          <p className="text-xs text-gray-500">Better thinking</p>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedModel('juices');
+                          setShowDeepThinkMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="p-2 rounded-lg bg-red-500">
+                          <Gamepad2 className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-sm">Juices</p>
+                          <p className="text-xs text-gray-500">Game & script specialist</p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="flex-1"></div>
 
