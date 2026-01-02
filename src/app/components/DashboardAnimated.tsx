@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Zap, Brain, Gamepad2, Sparkles, Send, User, Settings, LogOut, History, Star, Code, MessageSquare, Plus, Menu, Volume2, VolumeX } from 'lucide-react';
+import { Zap, Brain, Gamepad2, Sparkles, Send, User, Settings, LogOut, History, Star, Code, MessageSquare, Plus, Menu, Volume2, VolumeX, FolderPlus, Paperclip, Image as ImageIcon, FileText, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { NewProjectModal } from './NewProjectModal';
+import { ThinkingAnimation } from './ThinkingAnimation';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -33,6 +35,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [showDeepThinkMenu, setShowDeepThinkMenu] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const [currentProject, setCurrentProject] = useState<{name: string, model: string, type: string} | null>(null);
+  const [showFileMenu, setShowFileMenu] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   // Sound effects
@@ -187,12 +194,68 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   };
 
+  const handleCreateProject = (name: string, model: string, type: string) => {
+    playSound('success');
+    setCurrentProject({ name, model, type });
+    
+    if (type === 'roblox') {
+      const robloxMessage: Message = {
+        role: 'assistant',
+        content: `🎮 Roblox Project "${name}" created successfully!\n\nTo continue, please connect to the orange.ai plugin in Roblox:\n\n1. Open Roblox Studio\n2. Go to Plugins → Manage Plugins\n3. Search for "orange.ai"\n4. Click "Install" and then "Activate"\n5. Return here to start building your game!\n\nYour AI assistant is ready to help you create amazing Roblox experiences!`,
+        timestamp: new Date(),
+      };
+      setMessages([robloxMessage]);
+    } else {
+      const projectMessage: Message = {
+        role: 'assistant',
+        content: `✨ Project "${name}" created successfully!\n\nModel: ${model}\nType: ${type}\n\nI'm ready to help you with your ${type} project. What would you like to work on first?`,
+        timestamp: new Date(),
+      };
+      setMessages([projectMessage]);
+    }
+  };
+
+  const handleFileUpload = (type: 'image' | 'file') => {
+    playSound('click');
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = type === 'image' ? 'image/*' : '*';
+      fileInputRef.current.click();
+    }
+    setShowFileMenu(false);
+  };
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      playSound('success');
+      const file = e.target.files[0];
+      const fileMessage: Message = {
+        role: 'assistant',
+        content: `📎 File "${file.name}" uploaded successfully! I can now analyze this ${file.type.includes('image') ? 'image' : 'file'} for you. What would you like me to do with it?`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, fileMessage]);
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="flex h-screen bg-gray-50"
     >
+      <NewProjectModal 
+        isOpen={isNewProjectModalOpen} 
+        onClose={() => setIsNewProjectModalOpen(false)}
+        onCreateProject={handleCreateProject}
+      />
+      
+      <input 
+        ref={fileInputRef}
+        type="file"
+        onChange={onFileChange}
+        className="hidden"
+      />
+      
       {/* Sidebar */}
       <motion.div 
         initial={{ x: -100, opacity: 0 }}
@@ -222,11 +285,22 @@ export function Dashboard({ onLogout }: DashboardProps) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onHoverStart={() => playSound('hover')}
-            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 mb-3"
             onClick={handleNewChat}
           >
             <MessageSquare className="w-5 h-5" />
             New Chat
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onHoverStart={() => playSound('hover')}
+            onClick={() => { playSound('click'); setIsNewProjectModalOpen(true); }}
+            className="w-full border-2 border-orange-500 text-orange-500 py-3 px-4 rounded-lg hover:bg-orange-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <FolderPlus className="w-5 h-5" />
+            New Project
           </motion.button>
         </div>
 
@@ -475,23 +549,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                       <selectedModelData.icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="bg-white border border-gray-200 p-4 rounded-2xl">
-                      <div className="flex gap-1">
-                        <motion.div 
-                          animate={{ y: [0, -8, 0] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-                          className="w-2 h-2 bg-gray-400 rounded-full"
-                        />
-                        <motion.div 
-                          animate={{ y: [0, -8, 0] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
-                          className="w-2 h-2 bg-gray-400 rounded-full"
-                        />
-                        <motion.div 
-                          animate={{ y: [0, -8, 0] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
-                          className="w-2 h-2 bg-gray-400 rounded-full"
-                        />
-                      </div>
+                      <ThinkingAnimation />
                     </div>
                   </motion.div>
                 )}
@@ -510,15 +568,59 @@ export function Dashboard({ onLogout }: DashboardProps) {
           <div className="max-w-4xl mx-auto">
             {/* Toolbar */}
             <div className="flex items-center gap-2 mb-4">
-              <motion.button 
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                onHoverStart={() => playSound('hover')}
-                onClick={() => playSound('click')}
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Plus className="w-5 h-5 text-gray-600" />
-              </motion.button>
+              <div className="relative">
+                <motion.button 
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onHoverStart={() => playSound('hover')}
+                  onClick={() => { playSound('click'); setShowFileMenu(!showFileMenu); }}
+                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Paperclip className="w-5 h-5 text-gray-600" />
+                </motion.button>
+                
+                <AnimatePresence>
+                  {showFileMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50"
+                    >
+                      <div className="p-2">
+                        <motion.button
+                          whileHover={{ scale: 1.02, x: 4 }}
+                          whileTap={{ scale: 0.98 }}
+                          onHoverStart={() => playSound('hover')}
+                          onClick={() => handleFileUpload('image')}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="p-2 rounded-lg bg-blue-100">
+                            <ImageIcon className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className="text-sm">Upload Image</p>
+                          </div>
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02, x: 4 }}
+                          whileTap={{ scale: 0.98 }}
+                          onHoverStart={() => playSound('hover')}
+                          onClick={() => handleFileUpload('file')}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="p-2 rounded-lg bg-green-100">
+                            <FileText className="w-4 h-4 text-green-600" />
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className="text-sm">Upload File</p>
+                          </div>
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               
               <div className="relative">
                 <motion.button
