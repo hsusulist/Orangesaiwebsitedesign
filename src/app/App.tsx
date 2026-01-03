@@ -1,10 +1,15 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Sparkles, Brain, Zap, Gamepad2, Code, Clock } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
-import { Dashboard } from './components/DashboardAnimated';
+import { ReplitDashboard } from './components/ReplitDashboard';
 import { PricingSection } from './components/PricingSection';
 import { DocsSection } from './components/DocsSection';
 import { useAnimatedCounter } from './hooks/useAnimatedCounter';
 import { DemoModal } from './components/DemoModal';
 import { PlanSelectionModal } from './components/PlanSelectionModal';
+import { ModelCard } from './components/ModelCard';
+import { ImageWithFallback } from './components/figma/ImageWithFallback';
 
 export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -62,8 +67,8 @@ export default function App() {
   };
 
   // Show dashboard if logged in
-  if (isLoggedIn) {
-    return <Dashboard onLogout={handleLogout} />;
+  if (isLoggedIn && userPlan) {
+    return <ReplitDashboard onLogout={handleLogout} userPlan={userPlan} />;
   }
 
   return (
