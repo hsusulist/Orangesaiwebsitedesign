@@ -4,11 +4,14 @@ import { PricingSection } from './components/PricingSection';
 import { DocsSection } from './components/DocsSection';
 import { useAnimatedCounter } from './hooks/useAnimatedCounter';
 import { DemoModal } from './components/DemoModal';
+import { PlanSelectionModal } from './components/PlanSelectionModal';
 
 export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+  const [isPlanSelectionOpen, setIsPlanSelectionOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'core' | null>(null);
   const [activeUsersStarted, setActiveUsersStarted] = useState(false);
 
   // Animated counter for active users
@@ -28,13 +31,27 @@ export default function App() {
   }, []);
 
   const handleLogin = (email: string, password: string) => {
-    // Simulate login
+    // Simulate login - existing users already have plans
     setIsLoggedIn(true);
+    setUserPlan('free'); // Default to free plan for existing users
     setIsAuthModalOpen(false);
+  };
+
+  const handleRegister = () => {
+    // After registration, show plan selection
+    setIsAuthModalOpen(false);
+    setIsPlanSelectionOpen(true);
+  };
+
+  const handlePlanSelect = (plan: 'free' | 'pro' | 'core') => {
+    setUserPlan(plan);
+    setIsPlanSelectionOpen(false);
+    setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setUserPlan(null);
   };
 
   const formatNumber = (num: number) => {
@@ -55,10 +72,16 @@ export default function App() {
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)}
         onLogin={handleLogin}
+        onRegister={handleRegister}
       />
       <DemoModal 
         isOpen={isDemoModalOpen} 
         onClose={() => setIsDemoModalOpen(false)}
+      />
+      <PlanSelectionModal
+        isOpen={isPlanSelectionOpen}
+        onClose={() => setIsPlanSelectionOpen(false)}
+        onPlanSelect={handlePlanSelect}
       />
 
       {/* Header */}

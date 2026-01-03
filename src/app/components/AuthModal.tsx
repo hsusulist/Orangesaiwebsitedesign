@@ -6,9 +6,10 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (email: string, password: string) => void;
+  onRegister: () => void;
 }
 
-export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalProps) {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +17,11 @@ export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(email, password);
+    if (isLoginMode) {
+      onLogin(email, password);
+    } else {
+      onRegister();
+    }
   };
 
   return (
